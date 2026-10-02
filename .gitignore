@@ -1,0 +1,9 @@
+bin/
+obj/
+publish/
+Checks/bin/
+Checks/obj/
+
+releases/
+.vs/
+*.user
