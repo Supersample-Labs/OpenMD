@@ -97,6 +97,38 @@ internal static class Program
                             "Invalid settings safely fall back to light");
                     }
                     finally { if (File.Exists(settingsPath)) File.Delete(settingsPath); }
+
+                    var oldClipboard = Clipboard.GetDataObject();
+                    var restoreClipboard = new DataObject();
+                    if (oldClipboard is not null)
+                        foreach (var format in oldClipboard.GetFormats(false))
+                            try { if (oldClipboard.GetData(format, false) is object value) restoreClipboard.SetData(format, false, value); } catch { }
+                    try
+                    {
+                        setDocument.Invoke(form, new object?[] { "# Heading\n\n**selected**", null });
+                        editor.Select(11, 12);
+                        typeof(EditorWindow).GetMethod("CopyMarkdown", flags)!.Invoke(form, null);
+                        Check(Clipboard.GetText() == "**selected**", "Copy MD button uses selected source");
+                        editor.Select(0, 0);
+                        typeof(EditorWindow).GetMethod("CopyFormatted", flags)!.Invoke(form, new object[] { false });
+                        Check(Clipboard.ContainsText(TextDataFormat.Html), "Copy Formatted button puts rich HTML on Windows clipboard");
+                        setDocument.Invoke(form, new object?[] { "start end", null });
+                        editor.Select(6, 3);
+                        Clipboard.SetText("**pasted**");
+                        typeof(EditorWindow).GetMethod("PasteMarkdown", flags)!.Invoke(form, new object[] { false });
+                        Check(editor.Text == "start **pasted**", "Paste MD replaces selected text at cursor");
+                        editor.Undo();
+                        Check(editor.Text == "start end", "Paste MD supports Undo");
+                        var officeData = new DataObject();
+                        officeData.SetData(DataFormats.Html, MarkdownClipboard.HtmlPayload("<h2>Imported</h2><p><strong>Rich</strong></p>"));
+                        Clipboard.SetDataObject(officeData, true);
+                        editor.Select(editor.TextLength, 0);
+                        typeof(EditorWindow).GetMethod("PasteMarkdown", flags)!.Invoke(form, new object[] { true });
+                        Check(editor.Text.Contains("## Imported") && editor.Text.Contains("**Rich**"), "Paste Formatted button converts HTML to Markdown");
+                    }
+                    finally { Clipboard.SetDataObject(restoreClipboard, true); }
+                    ClipboardChecks.Run(Check);
+
                     Check(form.Icon is not null && form.Icon.Width >= 16, "Application window has an icon");
 
                     Check(form.Width >= 850 && editor.Width > 200 && preview.Width > 200, "Both editor and preview are laid out");
@@ -113,6 +145,8 @@ internal static class Program
         return failures == 0 ? 0 : 1;
     }
 }
+
+
 
 
 

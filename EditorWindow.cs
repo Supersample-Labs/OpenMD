@@ -68,6 +68,14 @@ public sealed class EditorWindow : Form
         theme.DropDownItems.AddRange([lightThemeItem, darkThemeItem]);
         view.DropDownItems.Add(theme);
         menu.Items.Add(view);
+        var clipboardMenu = new ToolStripMenuItem("&Clipboard");
+        AddMenu(clipboardMenu, "Copy &Formatted (Word / OneNote)", Keys.Control | Keys.Shift | Keys.C, () => CopyFormatted(false));
+        AddMenu(clipboardMenu, "Copy &HTML", Keys.None, () => CopyFormatted(true));
+        AddMenu(clipboardMenu, "Copy &Markdown", Keys.None, CopyMarkdown);
+        clipboardMenu.DropDownItems.Add(new ToolStripSeparator());
+        AddMenu(clipboardMenu, "Paste M&arkdown", Keys.Control | Keys.Shift | Keys.V, () => PasteMarkdown(false));
+        AddMenu(clipboardMenu, "Paste &Formatted → Markdown", Keys.Control | Keys.Alt | Keys.V, () => PasteMarkdown(true));
+        menu.Items.Add(clipboardMenu);
         MainMenuStrip = menu;
 
         var toolbar = new ToolStrip { GripStyle = ToolStripGripStyle.Hidden, Padding = new Padding(8), BackColor = Color.White };
@@ -98,6 +106,16 @@ public sealed class EditorWindow : Form
         AddButton(toolbar, "Table", () => Block("", "", "| Column 1 | Column 2 |\n| --- | --- |\n| Value | Value |"));
         AddButton(toolbar, "Rule", () => Block("", "", "---"));
 
+        var clipboardBar = new ToolStrip { GripStyle = ToolStripGripStyle.Hidden, Padding = new Padding(8) };
+        AddButton(clipboardBar, "Copy Formatted", () => CopyFormatted(false));
+        AddButton(clipboardBar, "Copy HTML", () => CopyFormatted(true));
+        AddButton(clipboardBar, "Copy MD", CopyMarkdown);
+        clipboardBar.Items.Add(new ToolStripSeparator());
+        AddButton(clipboardBar, "Paste MD", () => PasteMarkdown(false));
+        AddButton(clipboardBar, "Paste Formatted → MD", () => PasteMarkdown(true));
+        foreach (ToolStripItem item in clipboardBar.Items)
+            item.ToolTipText = (item.Text ?? "").StartsWith("Copy") ? "Copy selected Markdown, or the entire document if nothing is selected" : "Insert at the cursor or replace selected text";
+
         var split = new SplitContainer { Dock = DockStyle.Fill, SplitterWidth = 6 };
         split.Panel1.Controls.Add(editor);
         split.Panel1.Controls.Add(new Label { Text = "MARKDOWN", Dock = DockStyle.Top, Height = 38, Padding = new Padding(12, 10, 0, 0), ForeColor = Color.DimGray });
@@ -107,6 +125,7 @@ public sealed class EditorWindow : Form
         footer.Items.Add(status);
         Controls.Add(split);
         Controls.Add(toolbar);
+        Controls.Add(clipboardBar);
         Controls.Add(menu);
         Controls.Add(footer);
         Shown += async (_, _) =>
@@ -371,6 +390,48 @@ public sealed class EditorWindow : Form
         catch (Exception ex) { ShowError("Could not save the file.", ex); return false; }
     }
 
+
+    private string MarkdownToCopy() => editor.SelectionLength > 0 ? editor.SelectedText : editor.Text;
+
+    private void CopyFormatted(bool htmlSource)
+    {
+        try
+        {
+            Clipboard.SetDataObject(MarkdownClipboard.Create(MarkdownToCopy(), htmlSource), true, 5, 100);
+            status.Text = htmlSource ? "HTML copied — paste into an HTML editor." :
+                "Formatted document copied — paste into Word or OneNote using Keep Source Formatting.";
+        }
+        catch (Exception ex) { ShowError("Could not copy. The clipboard may be busy; please try again.", ex); }
+    }
+
+    private void CopyMarkdown()
+    {
+        try
+        {
+            var text = MarkdownToCopy();
+            var data = new DataObject();
+            data.SetData(DataFormats.UnicodeText, text);
+            data.SetData(MarkdownClipboard.MarkdownFormat, false, text);
+            Clipboard.SetDataObject(data, true, 5, 100);
+            status.Text = "Markdown source copied.";
+        }
+        catch (Exception ex) { ShowError("Could not copy Markdown.", ex); }
+    }
+
+    private void PasteMarkdown(bool convertHtml)
+    {
+        try
+        {
+            var data = Clipboard.GetDataObject();
+            var markdown = data is null ? null : MarkdownClipboard.ReadMarkdown(data, convertHtml);
+            if (markdown is null) { status.Text = "The clipboard does not contain text or HTML."; return; }
+            editor.SelectedText = markdown.Replace("\r\n", "\n").Replace("\r", "\n");
+            editor.Focus();
+            status.Text = convertHtml ? "Pasted as Markdown." : "Markdown source pasted.";
+        }
+        catch (Exception ex) { ShowError("Could not paste from the clipboard.", ex); }
+    }
+
     private void ExportHtml()
     {
         using var dialog = new SaveFileDialog { Filter = "HTML files|*.html", DefaultExt = "html", FileName = "document.html" };
@@ -382,6 +443,8 @@ public sealed class EditorWindow : Form
     private void ShowError(string message, Exception ex) =>
         MessageBox.Show(this, message + "\n\n" + ex.Message, "OpenMD", MessageBoxButtons.OK, MessageBoxIcon.Error);
 }
+
+
 
 
 

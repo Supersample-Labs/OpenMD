@@ -49,3 +49,32 @@ dotnet run --project Checks/OpenMD.Checks.csproj
 
 
 
+
+## Clipboard copy and paste
+
+The clipboard toolbar is at the top of the window; the same commands are under Clipboard.
+
+| Button | Action |
+| --- | --- |
+| Copy Formatted | Copy rendered HTML for Word, OneNote, Outlook, and other rich-text editors. Paste with Ctrl+V and select **Keep Source Formatting** if the target asks. |
+| Copy HTML | Copy a standalone HTML document as text for HTML/code editors; rich HTML is also available on the clipboard. |
+| Copy MD | Copy the original Markdown syntax as plain text. |
+| Paste MD | Insert clipboard Markdown/plain text without interpreting it as rich text. |
+| Paste Formatted → MD | Convert clipboard HTML to Markdown, preserving supported headings, emphasis, links, lists, and tables. If no HTML is available, paste plain text. |
+
+Copy commands use the selected source, or the whole document when nothing is selected. Paste commands insert at the cursor or replace the selection, and support Undo.
+
+Shortcuts: Ctrl+Shift+C copies formatted content; Ctrl+Shift+V pastes Markdown; Ctrl+Alt+V pastes formatted content as Markdown. Normal Ctrl+C/Ctrl+V continue to work in the source editor.
+
+The formatted clipboard uses an Office-friendly light palette even when the app is in dark mode. Word HTML-paste tests verify heading size, bold, italic, tables and links. OneNote receives the same HTML format; its exact result depends on its paste settings. Markdown cannot represent every Office feature: font colors, page layouts and complex merged tables may not survive conversion. Remote images are referenced by URL rather than embedded. When rich clipboard content has no HTML, plain text is used.
+
+Content copied from OpenMD also carries its original Markdown alongside the rendered clipboard formats so pasting back into OpenMD preserves the exact source.
+
+To include a real Word paste test (requires installed Microsoft Word):
+
+```powershell
+$env:OPENMD_CHECK_WORD = "1"
+dotnet run --project Checks/OpenMD.Checks.csproj
+```
+
+
