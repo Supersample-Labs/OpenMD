@@ -2,6 +2,10 @@
 
 A simple Windows Markdown editor and viewer built with .NET 10 LTS and Windows Forms.
 
+## Download
+
+Download the Windows ZIP from [GitHub Releases](https://github.com/Supersampled-Labs/OpenMD/releases), extract all files to a folder, and run OpenMD.exe. The .NET runtime is included. Microsoft Edge WebView2 Runtime is still required.
+
 ## Run
 
 Install the .NET 10 SDK and Microsoft Edge WebView2 Runtime, then run:
@@ -42,5 +46,6 @@ Run publish/OpenMD.exe. Keep all published files together. The self-contained bu
 ```powershell
 dotnet run --project Checks/OpenMD.Checks.csproj
 ```
+
 
 
