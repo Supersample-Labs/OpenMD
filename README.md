@@ -2,7 +2,7 @@
 
 Platform-specific applications are kept separate: [`windows/`](windows/) contains the Windows Forms project and tests, while [`macOS/`](macOS/) contains the native SwiftUI app. Shared branding assets remain in [`Assets/`](Assets/). Generated build output is ignored by Git.
 
-A simple Windows Markdown editor and viewer built with .NET 10 LTS and Windows Forms.
+A cross-platform Markdown editor for Windows and macOS with live preview, formatting tools, and light/dark themes.
 
 ## macOS
 
