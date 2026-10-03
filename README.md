@@ -1,6 +1,22 @@
 # OpenMD
 
+Platform-specific applications are kept separate: [`windows/`](windows/) contains the Windows Forms project and tests, while [`macOS/`](macOS/) contains the native SwiftUI app. Shared branding assets remain in [`Assets/`](Assets/). Generated build output is ignored by Git.
+
 A simple Windows Markdown editor and viewer built with .NET 10 LTS and Windows Forms.
+
+## macOS
+
+The repository also includes a native macOS version built with SwiftUI and WKWebView. It has the same split Markdown editor, live preview, file import/save, HTML export, toolbar formatting, and saved light/dark preference. It requires macOS 14 or later.
+
+Build a signed-for-local-use app bundle on a Mac with Xcode Command Line Tools:
+
+```zsh
+chmod +x macOS/scripts/build-macos-app.sh
+macOS/scripts/build-macos-app.sh
+open macOS/dist/OpenMD.app
+```
+
+The macOS-specific Swift package, source, script, intermediate build products, and resulting application all live in `macOS/`. The resulting application is `macOS/dist/OpenMD.app`. Distribute it only after signing with your Apple Developer certificate and notarizing it.
 
 ## Download
 
@@ -11,10 +27,10 @@ Download the Windows ZIP from [GitHub Releases](https://github.com/Supersampled-
 Install the .NET 10 SDK and Microsoft Edge WebView2 Runtime, then run:
 
 ```powershell
-dotnet run --project OpenMD.csproj
+dotnet run --project windows/OpenMD.csproj
 ```
 
-Or open OpenMD.csproj in Visual Studio with .NET desktop development support.
+Or open windows/OpenMD.csproj in Visual Studio with .NET desktop development support.
 
 ## Use
 
@@ -36,15 +52,15 @@ Raw HTML is disabled in Markdown. Preview links are displayed without navigating
 ## Build a portable Windows executable
 
 ```powershell
-dotnet publish OpenMD.csproj -c Release -r win-x64 --self-contained true -o publish
+dotnet publish windows/OpenMD.csproj -c Release -r win-x64 --self-contained true -o windows/publish
 ```
 
-Run publish/OpenMD.exe. Keep all published files together. The self-contained build includes .NET; the WebView2 Runtime must still be installed.
+Run windows/publish/OpenMD.exe. Keep all published files together. The self-contained build includes .NET; the WebView2 Runtime must still be installed.
 
 ## Formatting checks
 
 ```powershell
-dotnet run --project Checks/OpenMD.Checks.csproj
+dotnet run --project windows/Checks/OpenMD.Checks.csproj
 ```
 
 
@@ -74,7 +90,5 @@ To include a real Word paste test (requires installed Microsoft Word):
 
 ```powershell
 $env:OPENMD_CHECK_WORD = "1"
-dotnet run --project Checks/OpenMD.Checks.csproj
+dotnet run --project windows/Checks/OpenMD.Checks.csproj
 ```
-
-

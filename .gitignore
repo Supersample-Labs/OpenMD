@@ -1,8 +1,9 @@
 bin/
 obj/
 publish/
-Checks/bin/
-Checks/obj/
+macOS/.build/
+macOS/dist/
+.DS_Store
 
 releases/
 .vs/
