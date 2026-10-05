@@ -92,3 +92,11 @@ To include a real Word paste test (requires installed Microsoft Word):
 $env:OPENMD_CHECK_WORD = "1"
 dotnet run --project windows/Checks/OpenMD.Checks.csproj
 ```
+
+## Mermaid diagrams and PDF (Windows)
+
+Use fenced `mermaid` code blocks to edit diagrams as text and render them in the live preview. The Mermaid toolbar button inserts a starter flowchart. Mermaid 11.12.2 is bundled locally; diagram rendering does not require an internet connection. Syntax errors appear beside the diagram.
+
+Choose File → Export PDF for the document, or File → Export diagrams as PDF (also available as Diagram PDF on the toolbar) for landscape diagram pages. PDF export uses a light background and waits for rendering. Correct diagram syntax errors before exporting. Diagram-only export is intended for top-level fenced blocks, one diagram per page. Very large diagrams are scaled to fit.
+
+Bundled Mermaid is MIT licensed; see windows/Web/MERMAID-LICENSE.txt. The app remains dependent on the installed WebView2 Runtime.

@@ -57,6 +57,19 @@ internal static class Program
                     var html = System.Text.Json.JsonSerializer.Deserialize<string>(await preview.ExecuteScriptAsync("document.getElementById('content').innerHTML"))!;
                     Check(html.Contains("<h1") && html.Contains("Verified") && html.Contains("<strong>bold</strong>") && html.Contains("<table>"),
                         "Live WebView2 preview renders headings, bold and tables");
+                    setDocument.Invoke(form, new object?[] { "# Diagrams\n\n```mermaid\nflowchart LR\n A[Start] --> B[Finish]\n```\n\n```mermaid\nsequenceDiagram\n Alice->>Bob: Hello\n```", null });
+                    await (Task)typeof(EditorWindow).GetMethod("RenderPreview", flags)!.Invoke(form, null)!;
+                    
+                    Check(await preview.ExecuteScriptAsync("document.querySelectorAll('.diagram svg').length") == "2", "Offline Mermaid flowchart and sequence render as SVG");
+                    var pdf = Path.Combine(AppContext.BaseDirectory, "diagram-check.pdf");
+                    await preview.ExecuteScriptAsync("document.documentElement.classList.add('diagram-print');");
+                    var printSettings = preview.CoreWebView2.Environment.CreatePrintSettings();
+                    printSettings.Orientation = Microsoft.Web.WebView2.Core.CoreWebView2PrintOrientation.Landscape;
+                    Check(await preview.CoreWebView2.PrintToPdfAsync(pdf, printSettings) && File.ReadAllBytes(pdf).Take(5).SequenceEqual(System.Text.Encoding.ASCII.GetBytes("%PDF-")), "Mermaid diagrams export to a real PDF");
+                    await preview.ExecuteScriptAsync("document.documentElement.classList.remove('diagram-print');");
+                    setDocument.Invoke(form, new object?[] { "```mermaid\ninvalid diagram !\n```", null });
+                    await (Task)typeof(EditorWindow).GetMethod("RenderPreview", flags)!.Invoke(form, null)!;
+                    Check(await preview.ExecuteScriptAsync("document.querySelectorAll('.diagram-error').length") == "1", "Invalid Mermaid displays an inline error");
                     var setTheme = typeof(EditorWindow).GetMethod("SetTheme", flags)!;
                     var darkField = typeof(EditorWindow).GetField("darkMode", flags)!;
                     var originalTheme = (bool)darkField.GetValue(form)!;
@@ -145,6 +158,9 @@ internal static class Program
         return failures == 0 ? 0 : 1;
     }
 }
+
+
+
 
 
 

@@ -53,6 +53,8 @@ public sealed class EditorWindow : Form
         AddMenu(file, "Save &As…", Keys.Control | Keys.Shift | Keys.S, () => Save(true));
         file.DropDownItems.Add(new ToolStripSeparator());
         AddMenu(file, "Export &HTML…", Keys.None, ExportHtml);
+        AddMenu(file, "Export PDF…", Keys.None, async () => await ExportPdf(false));
+        AddMenu(file, "Export diagrams as PDF…", Keys.None, async () => await ExportPdf(true));
         AddMenu(file, "E&xit", Keys.None, Close);
         menu.Items.Add(file);
         var edit = new ToolStripMenuItem("&Edit");
@@ -105,6 +107,8 @@ public sealed class EditorWindow : Form
         AddButton(toolbar, "Code block", () => Block("```\n", "\n```", "code"));
         AddButton(toolbar, "Table", () => Block("", "", "| Column 1 | Column 2 |\n| --- | --- |\n| Value | Value |"));
         AddButton(toolbar, "Rule", () => Block("", "", "---"));
+        AddButton(toolbar, "Mermaid", () => Block("```mermaid\n", "\n```", "flowchart LR\n    A[Start] --> B[Finish]"));
+        AddButton(toolbar, "Diagram PDF", async () => await ExportPdf(true));
 
         var clipboardBar = new ToolStrip { GripStyle = ToolStripGripStyle.Hidden, Padding = new Padding(8) };
         AddButton(clipboardBar, "Copy Formatted", () => CopyFormatted(false));
@@ -185,6 +189,8 @@ public sealed class EditorWindow : Form
             };
             preview.NavigateToString(HtmlShell("<p>Loading preview…</p>"));
             await ready.Task.WaitAsync(TimeSpan.FromSeconds(60));
+            await preview.ExecuteScriptAsync(ReadScript("mermaid.min.js"));
+            await preview.ExecuteScriptAsync(ReadScript("preview.js"));
             previewReady = true;
             await RenderPreview();
         }
@@ -196,20 +202,24 @@ public sealed class EditorWindow : Form
         }
     }
 
+    private readonly SemaphoreSlim renderLock = new(1, 1);
     private async Task RenderPreview()
     {
-        if (!previewReady || IsDisposed) return;
+        if (!previewReady || IsDisposed || exporting) return;
+        await renderLock.WaitAsync();
         try
         {
             var html = Markdown.ToHtml(editor.Text, pipeline);
-            await preview.ExecuteScriptAsync("document.documentElement.dataset.theme = " + JsonSerializer.Serialize(darkMode ? "dark" : "light") + "; document.getElementById('content').innerHTML = " + JsonSerializer.Serialize(html) + ";");
+            await preview.ExecuteScriptAsync("window.openmdRender(" + JsonSerializer.Serialize(html) + "," + JsonSerializer.Serialize(darkMode) + ");");
+            await WaitForDiagrams();
         }
         catch (Exception ex) { status.Text = "Preview error: " + ex.Message; }
+        finally { renderLock.Release(); }
     }
 
     private static string HtmlShell(string body) => """
         <!doctype html><html><head><meta charset="utf-8">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; script-src 'none'">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src https: data:; script-src 'unsafe-eval'">
         <style>
         :root{color-scheme:light;--page:#fff;--text:#243247;--heading:#142238;--border:#e2e8f0;--code:#f1f5f9;--muted:#64748b;--quote:#f8fafc;--link:#4f46e5}
         :root[data-theme="dark"]{color-scheme:dark;--page:#0f172a;--text:#e2e8f0;--heading:#f8fafc;--border:#334155;--code:#1e293b;--muted:#94a3b8;--quote:#182235;--link:#a5b4fc}
@@ -222,6 +232,8 @@ public sealed class EditorWindow : Form
         blockquote{border-left:4px solid #818cf8;margin:20px 0;padding:1px 20px;color:var(--muted);background:var(--quote)}
         table{border-collapse:collapse;width:100%;margin:20px 0}td,th{border:1px solid var(--border);padding:8px 12px;text-align:left}th{background:var(--code)}
         a{color:var(--link)}img{max-width:100%;height:auto}hr{border:0;border-top:1px solid var(--border);margin:28px 0}
+        .diagram{overflow:auto;margin:20px 0}.diagram svg{max-width:100%;height:auto}.diagram-error{color:#dc2626;white-space:pre-wrap;padding:12px;border:1px solid #dc2626}
+        @media print{body{padding:0;background:white;color:#111}#content{max-width:none}.diagram{overflow:visible;break-inside:avoid}html.diagram-print #content>*{display:none!important}html.diagram-print #content .diagram{display:block!important;break-after:page}html.diagram-print .diagram svg{max-height:7in;width:100%;object-fit:contain}html.diagram-print #content .diagram:last-child{break-after:auto}}
         </style></head><body><main id="content">
         """ + body + "</main></body></html>";
 
@@ -440,9 +452,69 @@ public sealed class EditorWindow : Form
         catch (Exception ex) { ShowError("Could not export HTML.", ex); }
     }
 
+    private static string ReadScript(string name)
+    {
+        using var stream = typeof(EditorWindow).Assembly.GetManifestResourceStream("OpenMD.Web." + name)
+            ?? throw new IOException("Missing preview resource: " + name);
+        using var reader = new StreamReader(stream);
+        return reader.ReadToEnd();
+    }
+
+    private async Task WaitForDiagrams()
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(60);
+        while (await preview.ExecuteScriptAsync("window.openmdBusy") == "true")
+        {
+            if (DateTime.UtcNow > deadline) throw new TimeoutException("Diagram rendering timed out.");
+            await Task.Delay(100);
+        }
+    }
+    private bool exporting;
+    private async Task ExportPdf(bool diagramsOnly)
+    {
+        if (exporting) return;
+        if (!previewReady) { MessageBox.Show(this, "Wait for the preview to finish loading.", "Export PDF"); return; }
+        using var dialog = new SaveFileDialog { Filter = "PDF files|*.pdf", DefaultExt = "pdf", FileName = diagramsOnly ? "diagrams.pdf" : "document.pdf" };
+        if (dialog.ShowDialog(this) != DialogResult.OK) return;
+        exporting = true;
+        debounce.Stop();
+        editor.ReadOnly = true;
+        await renderLock.WaitAsync();
+        try
+        {
+            await preview.ExecuteScriptAsync("window.openmdRender(" + JsonSerializer.Serialize(Markdown.ToHtml(editor.Text, pipeline)) + ",false);");
+            var deadline = DateTime.UtcNow.AddSeconds(60);
+            while (await preview.ExecuteScriptAsync("window.openmdBusy") == "true")
+            {
+                if (DateTime.UtcNow > deadline) throw new TimeoutException("Diagram rendering timed out.");
+                await Task.Delay(100);
+            }
+            if (await preview.ExecuteScriptAsync("window.openmdErrors") != "0") throw new IOException("Correct the Mermaid errors in the preview before exporting.");
+            if (diagramsOnly && await preview.ExecuteScriptAsync("document.querySelectorAll('.diagram').length") == "0")
+                throw new IOException("Add a fenced mermaid code block before exporting diagrams.");
+            await preview.ExecuteScriptAsync("document.documentElement.classList.toggle('diagram-print', " + JsonSerializer.Serialize(diagramsOnly) + ");");
+            var settings = preview.CoreWebView2.Environment.CreatePrintSettings();
+            settings.ShouldPrintBackgrounds = true;
+            settings.Orientation = diagramsOnly ? CoreWebView2PrintOrientation.Landscape : CoreWebView2PrintOrientation.Portrait;
+            if (!await preview.CoreWebView2.PrintToPdfAsync(dialog.FileName, settings)) throw new IOException("PDF export did not complete.");
+            status.Text = "PDF saved: " + dialog.FileName;
+        }
+        catch (Exception ex) { ShowError("Could not export PDF.", ex); }
+        finally
+        {
+            await preview.ExecuteScriptAsync("document.documentElement.classList.remove('diagram-print');");
+            renderLock.Release();
+            editor.ReadOnly = false;
+            exporting = false;
+            await RenderPreview();
+        }
+    }
     private void ShowError(string message, Exception ex) =>
         MessageBox.Show(this, message + "\n\n" + ex.Message, "OpenMD", MessageBoxButtons.OK, MessageBoxIcon.Error);
 }
+
+
+
 
 
 
