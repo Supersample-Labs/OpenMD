@@ -106,3 +106,8 @@ On macOS, enter a fenced mermaid block and use File → Save Diagram as PDF. Mac
 Bundled Mermaid is MIT licensed; see windows/Web/MERMAID-LICENSE.txt. The app remains dependent on the installed WebView2 Runtime.
 
 
+
+## License
+
+OpenMD is available under the [MIT License](LICENSE). Third-party components retain their own licenses, including the bundled Mermaid license notices.
+
