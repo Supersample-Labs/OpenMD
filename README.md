@@ -2,11 +2,11 @@
 
 Platform-specific applications are kept separate: [`windows/`](windows/) contains the Windows Forms project and tests, while [`macOS/`](macOS/) contains the native SwiftUI app. Shared branding assets remain in [`Assets/`](Assets/). Generated build output is ignored by Git.
 
-A cross-platform Markdown editor for Windows and macOS with live preview, formatting tools, and light/dark themes.
+A Markdown editor for Windows and macOS with live preview, Mermaid diagrams, PDF export, formatting tools, and light/dark themes.
 
 ## macOS
 
-The repository also includes a native macOS version built with SwiftUI and WKWebView. It has the same split Markdown editor, live preview, file import/save, HTML export, toolbar formatting, and saved light/dark preference. It requires macOS 14 or later.
+The repository also includes a native macOS version built with SwiftUI and WKWebView. It includes a split Markdown editor, live preview, file import/save, HTML export, toolbar formatting, saved light/dark preference, bundled Mermaid rendering, and a Save Diagram as PDF command. Features and export behavior differ between platforms; the Windows clipboard tools and full-document PDF menu are Windows-specific. It requires macOS 14 or later.
 
 Build a signed-for-local-use app bundle on a Mac with Xcode Command Line Tools:
 
@@ -16,11 +16,13 @@ macOS/scripts/build-macos-app.sh
 open macOS/dist/OpenMD.app
 ```
 
-The macOS-specific Swift package, source, script, intermediate build products, and resulting application all live in `macOS/`. The resulting application is `macOS/dist/OpenMD.app`. Distribute it only after signing with your Apple Developer certificate and notarizing it.
+The macOS-specific Swift package, source, script, intermediate build products, and resulting application all live in `macOS/`. The resulting application is `macOS/dist/OpenMD.app`. The supplied Mac build is signed for local use (ad-hoc), not verified as Developer ID signed or notarized. macOS may require approval in System Settings → Privacy & Security. For a notarized distribution, rebuild and sign with your Apple Developer certificate.
 
 ## Download
 
-Download the Windows ZIP from [GitHub Releases](https://github.com/Supersampled-Labs/OpenMD/releases), extract all files to a folder, and run OpenMD.exe. The .NET runtime is included. Microsoft Edge WebView2 Runtime is still required.
+Download the Windows ZIP from [GitHub Releases](https://github.com/Supersample-Labs/OpenMD/releases), extract all files to a folder, and run OpenMD.exe. The .NET runtime is included. Microsoft Edge WebView2 Runtime is still required.
+
+Download the macOS ZIP from the same release page, extract OpenMD.app, and move it to Applications. Requires macOS 14 or later and an Apple Silicon (ARM64) Mac. The supplied Mac app reports version 1.1.0; the Windows app is 1.2.0. The Mac binary is supplied by the maintainer and was not rebuilt or run on Windows.
 
 ## Run
 
@@ -93,10 +95,14 @@ $env:OPENMD_CHECK_WORD = "1"
 dotnet run --project windows/Checks/OpenMD.Checks.csproj
 ```
 
-## Mermaid diagrams and PDF (Windows)
+## Mermaid diagrams and PDF
 
-Use fenced `mermaid` code blocks to edit diagrams as text and render them in the live preview. The Mermaid toolbar button inserts a starter flowchart. Mermaid 11.12.2 is bundled locally; diagram rendering does not require an internet connection. Syntax errors appear beside the diagram.
+Use fenced `mermaid` code blocks to edit diagrams as text and render them in the live preview. Both platforms bundle Mermaid locally, so diagram rendering does not require an internet connection. On Windows, the Mermaid toolbar button inserts a starter flowchart. Syntax errors appear beside the diagram.
 
-Choose File → Export PDF for the document, or File → Export diagrams as PDF (also available as Diagram PDF on the toolbar) for landscape diagram pages. PDF export uses a light background and waits for rendering. Correct diagram syntax errors before exporting. Diagram-only export is intended for top-level fenced blocks, one diagram per page. Very large diagrams are scaled to fit.
+On Windows, choose File → Export PDF for the document, or File → Export diagrams as PDF (also available as Diagram PDF on the toolbar) for landscape diagram pages. PDF export uses a light background and waits for rendering. Correct diagram syntax errors before exporting. Diagram-only export is intended for top-level fenced blocks, one diagram per page. Very large diagrams are scaled to fit.
+
+On macOS, enter a fenced mermaid block and use File → Save Diagram as PDF. Mac export uses WKWebView and differs from Windows landscape pagination. The supplied Mac source currently exports with the active theme and does not explicitly wait for Mermaid rendering; allow the preview to finish before exporting. Mac HTML exports refer to mermaid.min.js, which must be kept alongside the exported HTML for diagrams to render.
 
 Bundled Mermaid is MIT licensed; see windows/Web/MERMAID-LICENSE.txt. The app remains dependent on the installed WebView2 Runtime.
+
+

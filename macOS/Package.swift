@@ -5,5 +5,5 @@ let package = Package(
     name: "OpenMDMac",
     platforms: [.macOS(.v14)],
     products: [.executable(name: "OpenMD", targets: ["OpenMD"])],
-    targets: [.executableTarget(name: "OpenMD", path: "Sources/OpenMD")]
+    targets: [.executableTarget(name: "OpenMD", path: "Sources/OpenMD", resources: [.process("Resources")])]
 )

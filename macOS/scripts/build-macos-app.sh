@@ -8,6 +8,12 @@ swift build -c release --package-path "$project_root"
 rm -rf "$output"
 mkdir -p "$output/Contents/MacOS" "$output/Contents/Resources"
 cp "$binary_dir/OpenMD" "$output/Contents/MacOS/OpenMD"
+resource_bundle="$(find "$project_root/.build" -path '*/OpenMDMac_OpenMD.bundle/Contents/Resources/mermaid.min.js' -print -quit)"
+if [[ -z "$resource_bundle" ]]; then
+  echo "Could not find the SwiftPM Mermaid resource bundle" >&2
+  exit 1
+fi
+cp -R "${resource_bundle%/Contents/Resources/mermaid.min.js}" "$output/Contents/Resources/"
 iconset="$(mktemp -d)/OpenMD.iconset"
 mkdir "$iconset"
 for size in 16 32 128 256 512; do

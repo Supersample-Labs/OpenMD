@@ -8,3 +8,6 @@ macOS/dist/
 releases/
 .vs/
 *.user
+
+._*
+/OpenMD-*.zip

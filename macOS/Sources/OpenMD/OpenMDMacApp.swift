@@ -132,6 +132,7 @@ struct AppCommands: Commands {
             Button("Open…") { document.showingImporter = true }.keyboardShortcut("o")
             Button("Save As…") { document.showingExporter = true }.keyboardShortcut("s")
             Button("Export HTML…") { document.showingHtmlExporter = true }
+            Button("Save Diagram as PDF…") { NotificationCenter.default.post(name: .saveDiagramPDF, object: nil) }
         }
         CommandMenu("View") { Button(document.isDark ? "Use Light Theme" : "Use Dark Theme") { document.toggleTheme() } }
     }
@@ -145,17 +146,36 @@ struct TextFile: FileDocument {
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: Data(contents.utf8)) }
 }
 
+extension Notification.Name { static let saveDiagramPDF = Notification.Name("OpenMD.saveDiagramPDF") }
+
 struct MarkdownPreview: NSViewRepresentable {
     let markdown: String; let dark: Bool
-    func makeNSView(context: Context) -> WKWebView { let view = WKWebView(); view.setValue(false, forKey: "drawsBackground"); return view }
-    func updateNSView(_ webView: WKWebView, context: Context) { webView.loadHTMLString(PreviewHTML.document(markdown: markdown, dark: dark), baseURL: nil) }
+    func makeNSView(context: Context) -> WKWebView {
+        let view = WKWebView(); view.setValue(false, forKey: "drawsBackground")
+        NotificationCenter.default.addObserver(forName: .saveDiagramPDF, object: nil, queue: .main) { [weak view] _ in
+            guard let view else { return }
+            let panel = NSSavePanel(); panel.allowedContentTypes = [.pdf]; panel.nameFieldStringValue = "diagram.pdf"
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+            view.evaluateJavaScript("document.body.classList.add('diagram-export')") { _, _ in
+                view.createPDF(configuration: WKPDFConfiguration()) { result in
+                    do { try result.get().write(to: url, options: .atomic) }
+                    catch { NSLog("OpenMD PDF export failed: %@", error.localizedDescription) }
+                    view.evaluateJavaScript("document.body.classList.remove('diagram-export')")
+                }
+            }
+        }
+        return view
+    }
+    func updateNSView(_ webView: WKWebView, context: Context) {
+        webView.loadHTMLString(PreviewHTML.document(markdown: markdown, dark: dark), baseURL: Bundle.module.resourceURL)
+    }
 }
 
 enum PreviewHTML {
     static func document(markdown: String, dark: Bool) -> String {
         let encoded = markdown.data(using: .utf8)!.base64EncodedString()
         let page = #"""
-        <!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src https: data:"><style>:root{color-scheme:__SCHEME__;--bg:__BG__;--fg:__FG__;--code:__CODE__;--border:__BORDER__}body{margin:0;padding:30px;background:var(--bg);color:var(--fg);font:16px/1.7 -apple-system,sans-serif}h1,h2,h3{line-height:1.3}h2{border-bottom:1px solid var(--border);padding-bottom:.3em}code,pre{background:var(--code);font-family:ui-monospace,monospace;border-radius:5px}code{padding:2px 5px}pre{padding:14px;overflow:auto}blockquote{border-left:4px solid #818cf8;padding-left:16px;color:#64748b}table{border-collapse:collapse}td,th{border:1px solid var(--border);padding:7px 10px}img{max-width:100%}</style></head><body><main id="content"></main><script>const s=decodeURIComponent(escape(atob('__MARKDOWN__')));let e=s.replace(/&/g,'&amp;').replace(/</g,'&lt;');e=e.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h2>$1</h2>').replace(/^# (.*)$/gm,'<h1>$1</h1>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/!\[([^]]*)\]\((https:[^)]+)\)/g,'<img alt="$1" src="$2">').replace(/\[([^]]+)\]\((https:[^)]+)\)/g,'<a href="$2">$1</a>').replace(/^&gt; (.*)$/gm,'<blockquote>$1</blockquote>').replace(/^- \[ \] (.*)$/gm,'☐ $1').replace(/^- \[x\] (.*)$/gmi,'☑ $1').replace(/^- (.*)$/gm,'• $1').replace(/\n/g,'<br>');document.getElementById('content').innerHTML=e;</script></body></html>
+        <!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https:; script-src 'self' 'unsafe-inline'; img-src https: data:"><script src="mermaid.min.js"></script><style>:root{color-scheme:__SCHEME__;--bg:__BG__;--fg:__FG__;--code:__CODE__;--border:__BORDER__}body{margin:0;padding:30px;background:var(--bg);color:var(--fg);font:16px/1.7 -apple-system,sans-serif}h1,h2,h3{line-height:1.3}h2{border-bottom:1px solid var(--border);padding-bottom:.3em}code,pre{background:var(--code);font-family:ui-monospace,monospace;border-radius:5px}code{padding:2px 5px}pre{padding:14px;overflow:auto}blockquote{border-left:4px solid #818cf8;padding-left:16px;color:#64748b}table{border-collapse:collapse}td,th{border:1px solid var(--border);padding:7px 10px}img{max-width:100%}.mermaid{overflow-x:auto}.mermaid svg{max-width:100%;height:auto}.diagram-export body{padding:0;background:#fff}.diagram-export #content>*:not(.mermaid){display:none}.diagram-export .mermaid{display:block;overflow:visible}.diagram-export .mermaid svg{max-width:none;width:100%;height:auto}</style></head><body><main id="content"></main><script>const s=decodeURIComponent(escape(atob('__MARKDOWN__')));const diagrams=[];let e=s.replace(/^[ \t]*```mermaid[ \t]*\r?\n([\s\S]*?)^[ \t]*```[ \t]*$/gmi,(_,source)=>'OPENMDMERMAIDTOKEN'+(diagrams.push(source)-1)+'ENDTOKEN').replace(/&/g,'&amp;').replace(/</g,'&lt;');e=e.replace(/^```[^\n]*\n([\s\S]*?)\n```/gm,'<pre><code>$1</code></pre>').replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h2>$1</h2>').replace(/^# (.*)$/gm,'<h1>$1</h1>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/!\[([^]]*)\]\((https:[^)]+)\)/g,'<img alt="$1" src="$2">').replace(/\[([^]]+)\]\((https:[^)]+)\)/g,'<a href="$2">$1</a>').replace(/^&gt; (.*)$/gm,'<blockquote>$1</blockquote>').replace(/^- \[ \] (.*)$/gm,'☐ $1').replace(/^- \[x\] (.*)$/gmi,'☑ $1').replace(/^- (.*)$/gm,'• $1').replace(/\n/g,'<br>');e=e.replace(/OPENMDMERMAIDTOKEN(\d+)ENDTOKEN/g,(_,index)=>'<pre class="mermaid">'+diagrams[Number(index)].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre>');document.getElementById('content').innerHTML=e;if(window.mermaid){mermaid.initialize({startOnLoad:false,securityLevel:'strict',theme:'__MERMAID_THEME__'});mermaid.run({querySelector:'.mermaid'});}</script></body></html>
         """#
         return page.replacingOccurrences(of: "__MARKDOWN__", with: encoded)
             .replacingOccurrences(of: "__SCHEME__", with: dark ? "dark" : "light")
@@ -163,5 +183,6 @@ enum PreviewHTML {
             .replacingOccurrences(of: "__FG__", with: dark ? "#e2e8f0" : "#243247")
             .replacingOccurrences(of: "__CODE__", with: dark ? "#1e293b" : "#f1f5f9")
             .replacingOccurrences(of: "__BORDER__", with: dark ? "#334155" : "#e2e8f0")
+            .replacingOccurrences(of: "__MERMAID_THEME__", with: dark ? "dark" : "default")
     }
 }
