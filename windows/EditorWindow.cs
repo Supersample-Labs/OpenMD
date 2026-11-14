@@ -262,7 +262,7 @@ public sealed class EditorWindow : Form
         blockquote{border-left:4px solid #818cf8;margin:20px 0;padding:1px 20px;color:var(--muted);background:var(--quote)}
         table{border-collapse:collapse;width:100%;margin:20px 0}td,th{border:1px solid var(--border);padding:8px 12px;text-align:left}th{background:var(--code)}
         a{color:var(--link)}img{max-width:100%;height:auto}hr{border:0;border-top:1px solid var(--border);margin:28px 0}
-        .diagram{overflow:auto;margin:20px 0}.diagram svg{max-width:100%;height:auto}.diagram-error{color:#dc2626;white-space:pre-wrap;padding:12px;border:1px solid #dc2626}
+        .diagram{overflow:auto;margin:20px 0}.diagram svg{display:block;margin-inline:auto;max-width:100%;height:auto}.diagram-error{color:#dc2626;white-space:pre-wrap;padding:12px;border:1px solid #dc2626}
         @media print{body{padding:0;background:white;color:#111}#content{max-width:none}.diagram{overflow:visible;break-inside:avoid}html.diagram-print #content>*{display:none!important}html.diagram-print #content .diagram{display:block!important;break-after:page}html.diagram-print .diagram svg{max-height:7in;width:100%;object-fit:contain}html.diagram-print #content .diagram:last-child{break-after:auto}}
         </style></head><body><main id="content">
         """ + body + "</main></body></html>";

@@ -7,6 +7,8 @@ on:
     paths:
       - windows/**
       - macOS/**
+      - Assets/**
+      - RELEASE_NOTES.md
       - .github/workflows/release.yml
 
 permissions:
@@ -91,19 +93,6 @@ jobs:
             echo "Release $tag already exists; leaving it unchanged."
             exit 0
           fi
-          cat > notes.md <<'NOTES'
-          Mermaid starter diagrams are now available from the top menu and toolbar on Windows and macOS: Flowchart, Sequence, Class, State, Entity relationship, Gantt, Pie, and Mind map.
-
-          Templates insert a fenced Mermaid block and select its source for editing. macOS inserts at the cursor and supports Undo. Windows also includes Wrap selection as Mermaid. Both platforms retain bundled offline diagram rendering.
-
-          Downloads:
-          - Windows x64: extract the entire ZIP and run OpenMD.exe. .NET is included; Microsoft Edge WebView2 Runtime is required.
-          - macOS Apple Silicon: extract OpenMD.app and move it to Applications. Requires macOS 14 or later. The app is signed for local use (ad hoc), not Developer ID signed or notarized.
-
-          Validation: Windows application and check project compiled; macOS application built and its signature verified. Native macOS insertion, selection, document synchronization, and Undo were checked for all eight templates during development. Windows UI checks were not executed on the development Mac.
-
-          Both platform sources are included in the automatic source archives below.
-          NOTES
-          gh release create "$tag" --target "$GITHUB_SHA" --title "OpenMD $VERSION — Mermaid diagram menus for Windows and macOS" --notes-file notes.md --draft
+          gh release create "$tag" --target "$GITHUB_SHA" --title "OpenMD $VERSION — Windows and macOS" --notes-file RELEASE_NOTES.md --draft
           gh release upload "$tag" release/*.zip
           gh release edit "$tag" --draft=false --latest

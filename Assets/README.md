@@ -1,6 +1,6 @@
 # OpenMD application icon
 
-Generated with the built-in image_gen tool. The PNG source is preserved; OpenMD.ico contains 16, 24, 32, 48, 64, 128, and 256 pixel representations.
+Updated with the built-in image_gen tool for version 1.3.1. `OpenMD.png` is the shared source for both platforms. `OpenMD.ico` contains 16, 24, 32, 48, 64, 128, and 256 pixel representations; regenerate it with `python3 Assets/convert_icon.py` (requires Pillow). The macOS build script creates `OpenMD.icns` from the same PNG.
 
-Prompt:
-Use case: logo-brand. Asset type: Windows application icon for OpenMD, a Markdown editor. Create a polished square app icon: a rounded indigo-to-violet tile with a bold white stylized M and a small downward arrow, subtly incorporating an open document/page fold. Clean geometric silhouette, restrained dimensional highlights, crisp high contrast, legible at 16 pixels. Center the tile large in the square with minimal padding. No surrounding scene, no wordmark, no watermark. Transparent background outside the rounded tile.
+Edit prompt:
+Use case: precise-object-edit. Edit target: existing OpenMD application icon. Change only the rounded square tile background from indigo/purple to black, with subtle charcoal edge highlights. Preserve the existing white stylized M with its central downward arrow and folded document corner: same geometry, placement, proportions, and visual identity. Remove purple/blue tints from the mark and folds, using neutral white and gray shading. Black rounded tile, crisp high contrast, clean at small icon sizes. Preserve transparent background outside the rounded tile, including the original modest padding. No extra arrows, text, symbols, mockup, scene, or watermark. Output a square production app-icon image.

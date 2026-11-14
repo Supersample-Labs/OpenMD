@@ -22,7 +22,7 @@ The macOS-specific Swift package, source, script, intermediate build products, a
 
 Download the Windows ZIP from [GitHub Releases](https://github.com/Supersample-Labs/OpenMD/releases), extract all files to a folder, and run OpenMD.exe. The .NET runtime is included. Microsoft Edge WebView2 Runtime is still required.
 
-Download the macOS ZIP from the same release page, extract OpenMD.app, and move it to Applications. Requires macOS 14 or later and an Apple Silicon (ARM64) Mac. Both applications report version 1.3.0.
+Download the macOS ZIP from the same release page, extract OpenMD.app, and move it to Applications. Requires macOS 14 or later and an Apple Silicon (ARM64) Mac. Both applications report version 1.3.1.
 
 ## Run
 
@@ -38,7 +38,7 @@ Or open windows/OpenMD.csproj in Visual Studio with .NET desktop development sup
 
 - Type on the left; the preview updates on the right.
 - Choose View → Theme → Light or Dark. The editor, menus, toolbar, title bar and live preview follow the selected theme. Your choice is remembered between launches.
-- The executable and window use the custom OpenMD application icon.
+- Both apps use the black OpenMD icon with the white M and downward arrow.
 - Select text and click Bold, Italic, Strike, or Code. With no selection, a placeholder is inserted and selected.
 - Choose Heading → Heading 1–6 to format the current line or selected lines. Existing heading markers are replaced. Normal text removes them.
 - Use Bullets, Numbered, Checklist, Quote, Link, Image, Code block, Table, and Rule.
@@ -97,7 +97,7 @@ dotnet run --project windows/Checks/OpenMD.Checks.csproj
 
 ## Mermaid diagrams and PDF
 
-Use fenced `mermaid` code blocks to edit diagrams as text and render them in the live preview. Both platforms bundle Mermaid locally, so diagram rendering does not require an internet connection. On Windows, the **Mermaid** top menu and toolbar dropdown offer eight starter diagrams and an option to wrap selected Mermaid source. Templates replace the selection and select the inserted source for editing. Syntax errors appear beside the diagram.
+Use fenced `mermaid` code blocks to edit diagrams as text and render them in the live preview. Diagrams are horizontally centered by default in both apps, including HTML and PDF exports. Both platforms bundle Mermaid locally, so diagram rendering does not require an internet connection. On Windows, the **Mermaid** top menu and toolbar dropdown offer eight starter diagrams and an option to wrap selected Mermaid source. Templates replace the selection and select the inserted source for editing. Syntax errors appear beside the diagram.
 
 On Windows, choose File → Export PDF for the document, or File → Export diagrams as PDF (also available as Diagram PDF on the toolbar) for landscape diagram pages. PDF export uses a light background and waits for rendering. Correct diagram syntax errors before exporting. Diagram-only export is intended for top-level fenced blocks, one diagram per page. Very large diagrams are scaled to fit.
 
