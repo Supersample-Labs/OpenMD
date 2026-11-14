@@ -5,8 +5,8 @@ on:
   push:
     branches: [main]
     paths:
-      - windows/OpenMD.csproj
-      - macOS/scripts/build-macos-app.sh
+      - windows/**
+      - macOS/**
       - .github/workflows/release.yml
 
 permissions:

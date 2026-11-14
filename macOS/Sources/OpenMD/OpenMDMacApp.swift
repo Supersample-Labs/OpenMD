@@ -174,14 +174,16 @@ struct MarkdownPreview: NSViewRepresentable {
     func makeNSView(context: Context) -> WKWebView {
         let view = WKWebView(); view.setValue(false, forKey: "drawsBackground")
         NotificationCenter.default.addObserver(forName: .saveDiagramPDF, object: nil, queue: .main) { [weak view] _ in
-            guard let view else { return }
-            let panel = NSSavePanel(); panel.allowedContentTypes = [.pdf]; panel.nameFieldStringValue = "diagram.pdf"
-            guard panel.runModal() == .OK, let url = panel.url else { return }
-            view.evaluateJavaScript("document.body.classList.add('diagram-export')") { _, _ in
-                view.createPDF(configuration: WKPDFConfiguration()) { result in
-                    do { try result.get().write(to: url, options: .atomic) }
-                    catch { NSLog("OpenMD PDF export failed: %@", error.localizedDescription) }
-                    view.evaluateJavaScript("document.body.classList.remove('diagram-export')")
+            MainActor.assumeIsolated {
+                guard let view else { return }
+                let panel = NSSavePanel(); panel.allowedContentTypes = [.pdf]; panel.nameFieldStringValue = "diagram.pdf"
+                guard panel.runModal() == .OK, let url = panel.url else { return }
+                view.evaluateJavaScript("document.body.classList.add('diagram-export')") { _, _ in
+                    view.createPDF(configuration: WKPDFConfiguration()) { result in
+                        do { try result.get().write(to: url, options: .atomic) }
+                        catch { NSLog("OpenMD PDF export failed: %@", error.localizedDescription) }
+                        view.evaluateJavaScript("document.body.classList.remove('diagram-export')")
+                    }
                 }
             }
         }
