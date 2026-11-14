@@ -22,7 +22,7 @@ The macOS-specific Swift package, source, script, intermediate build products, a
 
 Download the Windows ZIP from [GitHub Releases](https://github.com/Supersample-Labs/OpenMD/releases), extract all files to a folder, and run OpenMD.exe. The .NET runtime is included. Microsoft Edge WebView2 Runtime is still required.
 
-Download the macOS ZIP from the same release page, extract OpenMD.app, and move it to Applications. Requires macOS 14 or later and an Apple Silicon (ARM64) Mac. The supplied Mac app reports version 1.1.0; the Windows app is 1.2.0. The Mac binary is supplied by the maintainer and was not rebuilt or run on Windows.
+Download the macOS ZIP from the same release page, extract OpenMD.app, and move it to Applications. Requires macOS 14 or later and an Apple Silicon (ARM64) Mac. Both applications report version 1.3.0.
 
 ## Run
 
@@ -97,11 +97,11 @@ dotnet run --project windows/Checks/OpenMD.Checks.csproj
 
 ## Mermaid diagrams and PDF
 
-Use fenced `mermaid` code blocks to edit diagrams as text and render them in the live preview. Both platforms bundle Mermaid locally, so diagram rendering does not require an internet connection. On Windows, the Mermaid toolbar button inserts a starter flowchart. Syntax errors appear beside the diagram.
+Use fenced `mermaid` code blocks to edit diagrams as text and render them in the live preview. Both platforms bundle Mermaid locally, so diagram rendering does not require an internet connection. On Windows, the **Mermaid** top menu and toolbar dropdown offer eight starter diagrams and an option to wrap selected Mermaid source. Templates replace the selection and select the inserted source for editing. Syntax errors appear beside the diagram.
 
 On Windows, choose File → Export PDF for the document, or File → Export diagrams as PDF (also available as Diagram PDF on the toolbar) for landscape diagram pages. PDF export uses a light background and waits for rendering. Correct diagram syntax errors before exporting. Diagram-only export is intended for top-level fenced blocks, one diagram per page. Very large diagrams are scaled to fit.
 
-On macOS, enter a fenced mermaid block and use File → Save Diagram as PDF. Mac export uses WKWebView and differs from Windows landscape pagination. The supplied Mac source currently exports with the active theme and does not explicitly wait for Mermaid rendering; allow the preview to finish before exporting. Mac HTML exports refer to mermaid.min.js, which must be kept alongside the exported HTML for diagrams to render.
+On macOS, choose a starter diagram from **Mermaid** in the top menu bar or toolbar. Flowchart, Sequence, Class, State, Entity relationship, Gantt, Pie, and Mind map templates insert a fenced block at the cursor (replacing selected text) and select the source for editing. Undo is supported. You can also enter a fenced mermaid block and use File → Save Diagram as PDF. Mac export uses WKWebView and differs from Windows landscape pagination. The supplied Mac source currently exports with the active theme and does not explicitly wait for Mermaid rendering; allow the preview to finish before exporting. Mac HTML exports refer to mermaid.min.js, which must be kept alongside the exported HTML for diagrams to render.
 
 Bundled Mermaid is MIT licensed; see windows/Web/MERMAID-LICENSE.txt. The app remains dependent on the installed WebView2 Runtime.
 

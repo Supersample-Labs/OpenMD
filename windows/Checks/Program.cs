@@ -30,6 +30,25 @@ internal static class Program
         var preview = (WebView2)typeof(EditorWindow).GetField("preview", flags)!.GetValue(form)!;
         var readyField = typeof(EditorWindow).GetField("previewReady", flags)!;
         var setDocument = typeof(EditorWindow).GetMethod("SetDocument", flags)!;
+        var mermaidMenu = form.MainMenuStrip!.Items.OfType<ToolStripMenuItem>()
+            .Single(item => item.Text == "&Mermaid");
+        foreach (var template in MermaidTemplates.All)
+        {
+            setDocument.Invoke(form, new object?[] { "before after", null });
+            editor.Select(7, 5);
+            mermaidMenu.DropDownItems.OfType<ToolStripMenuItem>()
+                .Single(item => item.Text == template.Name).PerformClick();
+            Check(editor.Text == "before \n\n```mermaid\n" + template.Source + "\n```\n",
+                template.Name + " menu inserts fenced template in place of selection");
+            Check(editor.SelectedText == template.Source, template.Name + " source is selected for editing");
+            editor.Undo();
+            Check(editor.Text == "before after", template.Name + " insertion supports Undo");
+        }
+        setDocument.Invoke(form, new object?[] { "flowchart LR\n    A --> B", null });
+        editor.SelectAll();
+        ((ToolStripMenuItem)mermaidMenu.DropDownItems[0]).PerformClick();
+        Check(editor.Text.Contains("```mermaid\nflowchart LR\n    A --> B\n```"),
+            "Mermaid wrap preserves existing diagram source");
         using var timer = new System.Windows.Forms.Timer { Interval = 500 };
         var attempts = 0;
         var checking = false;

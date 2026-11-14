@@ -78,6 +78,9 @@ public sealed class EditorWindow : Form
         AddMenu(clipboardMenu, "Paste M&arkdown", Keys.Control | Keys.Shift | Keys.V, () => PasteMarkdown(false));
         AddMenu(clipboardMenu, "Paste &Formatted → Markdown", Keys.Control | Keys.Alt | Keys.V, () => PasteMarkdown(true));
         menu.Items.Add(clipboardMenu);
+        var mermaidMenu = new ToolStripMenuItem("&Mermaid");
+        AddMermaidOptions(mermaidMenu);
+        menu.Items.Add(mermaidMenu);
         MainMenuStrip = menu;
 
         var toolbar = new ToolStrip { GripStyle = ToolStripGripStyle.Hidden, Padding = new Padding(8), BackColor = Color.White };
@@ -107,7 +110,9 @@ public sealed class EditorWindow : Form
         AddButton(toolbar, "Code block", () => Block("```\n", "\n```", "code"));
         AddButton(toolbar, "Table", () => Block("", "", "| Column 1 | Column 2 |\n| --- | --- |\n| Value | Value |"));
         AddButton(toolbar, "Rule", () => Block("", "", "---"));
-        AddButton(toolbar, "Mermaid", () => Block("```mermaid\n", "\n```", "flowchart LR\n    A[Start] --> B[Finish]"));
+        var mermaidToolbar = new ToolStripDropDownButton("Mermaid");
+        AddMermaidOptions(mermaidToolbar);
+        toolbar.Items.Add(mermaidToolbar);
         AddButton(toolbar, "Diagram PDF", async () => await ExportPdf(true));
 
         var clipboardBar = new ToolStrip { GripStyle = ToolStripGripStyle.Hidden, Padding = new Padding(8) };
@@ -163,6 +168,31 @@ public sealed class EditorWindow : Form
     private static void AddButton(ToolStrip toolbar, string text, Action action)
     {
         toolbar.Items.Add(new ToolStripButton(text, null, (_, _) => action()) { ToolTipText = text + " — format selected text or insert at cursor" });
+    }
+
+    private void AddMermaidOptions(ToolStripDropDownItem menu)
+    {
+        menu.DropDownItems.Add("Wrap selection as Mermaid", null,
+            (_, _) => Block("```mermaid\n", "\n```", "flowchart TD\n    A[Start] --> B[End]"));
+        menu.DropDownItems.Add(new ToolStripSeparator());
+        foreach (var template in MermaidTemplates.All)
+        {
+            menu.DropDownItems.Add(template.Name, null,
+                (_, _) => InsertMermaid(template.Source));
+        }
+    }
+
+    private void InsertMermaid(string source)
+    {
+        // A starter diagram replaces the selection; wrapping is a separate menu option.
+        var start = editor.SelectionStart;
+        var end = start + editor.SelectionLength;
+        var lead = start > 0 && editor.Text[start - 1] != '\n' ? "\n\n" : "";
+        var tail = end < editor.TextLength && editor.Text[end] != '\n' ? "\n\n" : "\n";
+        var before = lead + "```mermaid\n";
+        var replacement = before + source + "\n```" + tail;
+        Apply(new EditResult(editor.Text.Remove(start, editor.SelectionLength).Insert(start, replacement),
+            start + before.Length, source.Length));
     }
 
     private async Task InitializePreview()

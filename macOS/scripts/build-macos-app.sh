@@ -4,7 +4,7 @@ project_root="$(cd "$(dirname "$0")/.." && pwd)"
 shared_assets="$project_root/../Assets"
 output="$project_root/dist/OpenMD.app"
 binary_dir="$project_root/.build/release"
-swift build -c release --package-path "$project_root"
+swift build -c release --arch arm64 --package-path "$project_root"
 rm -rf "$output"
 mkdir -p "$output/Contents/MacOS" "$output/Contents/Resources"
 cp "$binary_dir/OpenMD" "$output/Contents/MacOS/OpenMD"
@@ -26,7 +26,7 @@ rm -rf "${iconset:h}"
 cat > "$output/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0"><dict><key>CFBundleExecutable</key><string>OpenMD</string><key>CFBundleIconFile</key><string>OpenMD</string><key>CFBundleIdentifier</key><string>com.supersampledlabs.openmd</string><key>CFBundleName</key><string>OpenMD</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>1.1.0</string><key>LSMinimumSystemVersion</key><string>14.0</string></dict></plist>
+<plist version="1.0"><dict><key>CFBundleExecutable</key><string>OpenMD</string><key>CFBundleIconFile</key><string>OpenMD</string><key>CFBundleIdentifier</key><string>com.supersampledlabs.openmd</string><key>CFBundleName</key><string>OpenMD</string><key>CFBundlePackageType</key><string>APPL</string><key>CFBundleShortVersionString</key><string>1.3.0</string><key>LSMinimumSystemVersion</key><string>14.0</string></dict></plist>
 PLIST
 codesign --force --deep --sign - "$output"
 echo "Built $output"

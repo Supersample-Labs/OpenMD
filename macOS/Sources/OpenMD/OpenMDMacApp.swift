@@ -36,6 +36,25 @@ final class MarkdownDocument: ObservableObject {
     @Published var showingHtmlExporter = false
     @Published var error: String?
 
+    weak var sourceEditor: NSTextView?
+
+    func insertMermaid(_ source: String) {
+        let range = sourceEditor?.selectedRange() ?? NSRange(location: (text as NSString).length, length: 0)
+        let original = text as NSString
+        let lead = range.location > 0 && original.substring(to: range.location).last != "\n" ? "\n\n" : ""
+        let end = NSMaxRange(range)
+        let tail = end < original.length && original.substring(from: end).first != "\n" ? "\n\n" : "\n"
+        let before = lead + "```mermaid\n"
+        let replacement = before + source + "\n```" + tail
+        if let editor = sourceEditor {
+            editor.insertText(replacement, replacementRange: range)
+            editor.setSelectedRange(NSRange(location: range.location + (before as NSString).length, length: (source as NSString).length))
+            editor.window?.makeFirstResponder(editor)
+        } else {
+            text = original.replacingCharacters(in: range, with: replacement)
+        }
+    }
+
     var title: String { (fileURL?.lastPathComponent ?? "Untitled") + " — OpenMD" }
     var status: String {
         let words = text.split { $0.isWhitespace || $0.isNewline }.count
@@ -75,7 +94,7 @@ struct EditorView: View {
             HSplitView {
                 VStack(spacing: 0) {
                     SectionLabel(title: "MARKDOWN")
-                    TextEditor(text: $document.text)
+                    SourceEditor(document: document)
                         .font(.system(.body, design: .monospaced))
                         .padding(12)
                         .background(document.isDark ? Color(red: 0.06, green: 0.09, blue: 0.16) : Color(red: 0.98, green: 0.98, blue: 0.99))
@@ -118,6 +137,7 @@ struct ToolBar: View {
                 Button("Link") { insert("[", "](https://example.com)", placeholder: "link text") }; Button("Image") { insert("![", "](https://example.com/image.png)", placeholder: "description") }
                 Button("Code block") { insert("\n```\n", "\n```\n", placeholder: "code") }; Button("Table") { insert("\n", "\n", placeholder: "| Column 1 | Column 2 |\n| --- | --- |\n| Value | Value |") }
             }
+            Menu("Mermaid") { MermaidOptions(document: document) }
             Spacer()
             Button(document.isDark ? "Light" : "Dark") { document.toggleTheme() }
         }.buttonStyle(.bordered).controlSize(.small).padding(8).background(.bar)
@@ -134,6 +154,7 @@ struct AppCommands: Commands {
             Button("Export HTML…") { document.showingHtmlExporter = true }
             Button("Save Diagram as PDF…") { NotificationCenter.default.post(name: .saveDiagramPDF, object: nil) }
         }
+        CommandMenu("Mermaid") { MermaidOptions(document: document) }
         CommandMenu("View") { Button(document.isDark ? "Use Light Theme" : "Use Dark Theme") { document.toggleTheme() } }
     }
 }
