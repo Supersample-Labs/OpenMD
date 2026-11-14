@@ -190,11 +190,18 @@ struct MarkdownPreview: NSViewRepresentable {
         return view
     }
     func updateNSView(_ webView: WKWebView, context: Context) {
-        webView.loadHTMLString(PreviewHTML.document(markdown: markdown, dark: dark), baseURL: Bundle.module.resourceURL)
+        webView.loadHTMLString(PreviewHTML.document(markdown: markdown, dark: dark), baseURL: PreviewHTML.resourceURL)
     }
 }
 
 enum PreviewHTML {
+    static var resourceURL: URL? {
+        // Resolve packaged resources explicitly across SwiftPM bundle layouts.
+        if let location = Bundle.main.resourceURL?.appendingPathComponent("OpenMDMac_OpenMD.bundle"),
+           let bundle = Bundle(url: location) { return bundle.resourceURL }
+        return Bundle.module.resourceURL
+    }
+
     static func document(markdown: String, dark: Bool) -> String {
         let encoded = markdown.data(using: .utf8)!.base64EncodedString()
         let page = #"""
